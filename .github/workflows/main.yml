@@ -12,6 +12,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      # Falha cedo se algum secret estiver ausente
+      - name: Validar secrets
+        run: |
+          test -n "${{ secrets.HOST }}" || (echo "ERRO: secret HOST ausente"; exit 1)
+          test -n "${{ secrets.KEY }}"  || (echo "ERRO: secret KEY ausente"; exit 1)
+
       - name: Criar arquivo temporário da chave
         run: |
           printf "%s" "${{ secrets.KEY }}" > /tmp/private_key
@@ -19,23 +25,28 @@ jobs:
 
       - name: Testar conexão SSH (debug)
         run: |
-          ssh -i /tmp/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "${{ secrets.USER }}@${{ secrets.HOST }}" "hostname -I && echo OK"
+          ssh -i /tmp/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+            "ubuntu@${{ secrets.HOST }}" "hostname -I && echo OK"
 
       - name: Criar pasta no servidor
         run: |
-          ssh -i /tmp/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "${{ secrets.USER }}@${{ secrets.HOST }}" "sudo mkdir -p /home/ubuntu/app"
+          ssh -i /tmp/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+            "ubuntu@${{ secrets.HOST }}" "sudo mkdir -p /home/ubuntu/app"
 
       - name: Ajustar permissões
         run: |
-          ssh -i /tmp/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "${{ secrets.USER }}@${{ secrets.HOST }}" "sudo chown -R ubuntu:ubuntu /home/ubuntu/app && sudo chmod -R 755 /home/ubuntu/app"
+          ssh -i /tmp/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+            "ubuntu@${{ secrets.HOST }}" "sudo chown -R ubuntu:ubuntu /home/ubuntu/app && sudo chmod -R 755 /home/ubuntu/app"
 
       - name: Transferir arquivos da aplicação
         run: |
-          scp -i /tmp/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r $GITHUB_WORKSPACE/* "${{ secrets.USER }}@${{ secrets.HOST }}:/home/ubuntu/app/"
+          scp -i /tmp/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r \
+            "$GITHUB_WORKSPACE/*" "ubuntu@${{ secrets.HOST }}:/home/ubuntu/app/"
 
       - name: Reiniciar serviço
         run: |
-          ssh -i /tmp/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "${{ secrets.USER }}@${{ secrets.HOST }}" "sudo systemctl restart helloworld.service"
+          ssh -i /tmp/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+            "ubuntu@${{ secrets.HOST }}" "sudo systemctl restart helloworld.service"
 
       - name: Limpar chave
         run: rm -f /tmp/private_key
