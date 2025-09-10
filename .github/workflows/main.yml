@@ -21,23 +21,22 @@ jobs:
       - name: Criar pasta no servidor
         run: |
           ssh -i /tmp/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-            ubuntu@${{ secrets.HOST }} "sudo mkdir -p /home/ubuntu/app"
+            "${{ secrets.USER }}@${{ secrets.HOST }}" "sudo mkdir -p /home/ubuntu/app"
 
       - name: Ajustar permissões
         run: |
           ssh -i /tmp/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-            ubuntu@${{ secrets.HOST }} "sudo chown -R ubuntu:ubuntu /home/ubuntu/app && sudo chmod -R 755 /home/ubuntu/app"
+            "${{ secrets.USER }}@${{ secrets.HOST }}" "sudo chown -R ubuntu:ubuntu /home/ubuntu/app && sudo chmod -R 755 /home/ubuntu/app"
 
       - name: Transferir arquivos da aplicação
         run: |
           scp -i /tmp/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r \
-            ${{ github.workspace }}/* ubuntu@${{ secrets.HOST }}:/home/ubuntu/app
+            "${{ github.workspace }}/*" "${{ secrets.USER }}@${{ secrets.HOST }}:/home/ubuntu/app"
 
-      # Se você já tem um serviço systemd configurado para rodar 'dotnet HelloWorld.dll':
       - name: Reiniciar serviço
         run: |
           ssh -i /tmp/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-            ubuntu@${{ secrets.HOST }} "sudo systemctl restart helloworld.service"
+            "${{ secrets.USER }}@${{ secrets.HOST }}" "sudo systemctl restart helloworld.service"
 
       - name: Limpar chave
         run: rm -f /tmp/private_key
